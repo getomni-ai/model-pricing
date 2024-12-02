@@ -67,9 +67,9 @@ export function getModelPricing({
         price = 0.01;
       } else {
         // Handle sequences longer than 30,000 nucleotides
-        const extraNucleotides = sequenceLength - 30000;
         // Assuming an additional cost per extra nucleotide
-        price = 0.01 + 0.0000001 * extraNucleotides;
+        const extraNucleotides = sequenceLength - 30000;
+        price = 0.01 + 0.00001 * extraNucleotides;
       }
       break;
 
