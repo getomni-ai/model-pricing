@@ -1,8 +1,5 @@
 # Model Pricing Library
 
-This package exports `getModelPricing` which returns a pricing calculation for a combination of:
+**WIP: Pricings are not finalized yet.**
 
-- `sequence` - Amino acid sequence with mask tokens (`ACDEFGHIKLMNPQRSTVWY<mask>`)
-- `tracks` - Array of tracks
-- `model` - Model identifyier: esm, abdiffusion, etc.
-- `transform` - Transform type: FILL_MASK, EMBEDDING, etc.
+This package exports `getModelPricing` which returns a pricing calculation for a combination of model parameters. See `examples.ts` for a runnable example of use.

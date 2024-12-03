@@ -1,31 +1,67 @@
-const borzoi_human_fold0_test = {
-  prom: "GTCCCACTGATGAACTGTGCTGCCACAGTAAATGTAGCCACTATGCCTATCTCCATTCTCAAGATGTGTCACTTCCTGTTTCAGACTCAAATCAGCCACAGTGGCAGAAGCCCACGAAATCAGAGGTGAAATTTAATAATGACCACTGCCCATTCTCTTCACTTGTCCCAAGAGGCCATTGGAAATAGTCCAAAGACCCATTGAGGGAGATGGACATTATTTCCCAGAAGTAAATACAGCTCAGCTTGTACTTTGGTACAACTAATCGACCTTACCACTTTCACAATCTGCTAGCAAAGGTTA",
-  orf: "tgccagccatctgttgtttgcccctcccccgtgccttccttgaccctggaaggtgccactcccactgtcctttcctaataaaatgaggaaattgcatcgcattgtctgagtaggtgtcattctattctggggggtggggtggggcaggacagcaagggggaggattgggaagacaatagcaggcatgctggggatgcggtgggctctatgg",
+import {
+  getModelPricing,
+  PromoterActivityParams,
+  MeanEmbeddingParams,
+  MaskedInferenceParams,
+  DiffusionUnmaskingParams,
+  Transforms,
+  ModelOptions,
+} from "./modelPricing";
+
+// Mean Embedding ----------------------------------------------------------------
+
+const mean_embedding_params: MeanEmbeddingParams = {
+  sequence: "ATGGTGCTGCCACAGTAAATGTAGCCACTATGCCTATCTCCATTCTCAAGATGTGT",
+  model: ModelOptions.ginkgo_maskedlm_3utr_v1,
+  transform: Transforms.EMBEDDING,
+};
+console.log({
+  scenario: "mean_embedding",
+  price: getModelPricing(mean_embedding_params),
+});
+
+// Masked Inference --------------------------------------------------------------
+
+const masked_inference_params: MaskedInferenceParams = {
+  sequence:
+    "ATGG<MASK>TGCTGCCACAGTAAATGTAGCCACTATGCC<MASK>TATCTCCATTCTCAAGATGTGT",
+  model: ModelOptions.ginkgo_maskedlm_3utr_v1,
+  transform: Transforms.FILL_MASK,
+};
+console.log({
+  scenario: "masked_inference",
+  price: getModelPricing(masked_inference_params),
+});
+
+// Promoter Activity ------------------------------------------------------------
+
+const promoter_activity_params: PromoterActivityParams = {
+  promoter_sequence:
+    "GTCCCACTGATGAACTGTGCTGCCACAGTAAATGTAGCCACTATGCCTATCTCCATTCTCAAGATGTGTCACTTCCTGTT",
+  orf_sequence:
+    "tgccagccatctgttgtttgcccctcccccgtgccttccttgaccctggaaggtgccactcccactgtcctttcctaat",
   tissue_of_interest: {
     heart: ["CNhs10608+", "CNhs10612+"],
     liver: ["CNhs10608+", "CNhs10612+"],
   },
+  model: ModelOptions.borzoi_human_fold0,
+  transform: Transforms.PROMOTER_ACTIVITY,
 };
+console.log({
+  scenario: "promoter_activity",
+  price: getModelPricing(promoter_activity_params),
+});
 
-const abdiffusion_fill_mask_test = {
-  sequence: "AAAA <MASK> <MASK>(<MASK>AAAAA)",
-  temperature: 1.0,
-  decoding_order_strategy: "entropy",
+// Diffusion Unmasking ----------------------------------------------------------
+
+const diffusion_unmasking_params: DiffusionUnmaskingParams = {
+  sequence:
+    "MKLLM<MASK><MASK><MASK><MASK>MKL<MASK><MASK><MASK><MASK><MASK><MASK><MASK>MKL",
+  model: ModelOptions.abdiffusion,
+  transform: Transforms.DIFFUSION_UNMASKING,
+  unmaskings_per_step: 2,
 };
-
-const abdiffusion_generate_test = {
-  length: 128,
-  temperature: 1.0,
-  decoding_order_strategy: "entropy",
-};
-
-const icdna_fill_mask_test = { sequence: "atgrywggn<mask><unk><pad>" };
-
-const icdna_embedding_test = { sequence: "atgrywggn<mask><unk><pad>" };
-
-const icdna_generate_test = {
-  sequence: "atgrywggn<mask><unk><pad>",
-  temperature: 1.0,
-  decoding_order_strategy: "entropy",
-  frac_to_decode_per_step: 0.1,
-};
+console.log({
+  scenario: "diffusion_unmasking",
+  price: getModelPricing(diffusion_unmasking_params),
+});

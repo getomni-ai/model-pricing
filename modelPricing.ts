@@ -1,81 +1,149 @@
-enum Transforms {
+/*
+ * This file defines the pricing for the different model operations.
+ */
+
+// TRANSFORMS AND MODEL OPTIONS -------------------------------------------------
+
+export enum Transforms {
   EMBEDDING = "EMBEDDING",
   FILL_MASK = "FILL_MASK",
   GENERATE = "GENERATE",
   PROMOTER_ACTIVITY = "PROMOTER_ACTIVITY",
   TRACKS_PREDICTION = "TRACKS_PREDICTION",
+  DIFFUSION_UNMASKING = "DIFFUSION_UNMASKING",
 }
 
-enum ModelOptions {
+export enum ModelOptions {
   abdiffusion = "abdiffusion",
-  borzoi_dna = "borzoi_dna",
   borzoi_human_fold0 = "borzoi_human_fold0",
   lcdna = "lcdna",
+  ginkgo_aa0_650M = "ginkgo-aa0-650M",
+  esm2_650M = "esm2-650M",
+  esm2_3B = "esm2-3B",
+  ginkgo_maskedlm_3utr_v1 = "ginkgo-maskedlm-3utr-v1",
 }
 
-interface ModelPricingOptions {
-  model: ModelOptions;
+// REQUEST TYPES ----------------------------------------------------------------
+
+export type MeanEmbeddingParams = {
+  transform: Transforms.EMBEDDING;
   sequence: string;
-  tracks: number[];
-  transform: Transforms;
-}
+  model:
+    | ModelOptions.esm2_650M
+    | ModelOptions.esm2_3B
+    | ModelOptions.ginkgo_maskedlm_3utr_v1
+    | ModelOptions.ginkgo_aa0_650M;
+};
 
-// Tokenizes the sequence with one token per mask (<cls>, <eos>, <pad>, <mask>)
-// and one token per amino acid (ACDEFGHIKLMNPQRSTVWY)
-const getMaskTokens = (sequence: string): number => {
-  const tokenPattern = /(<[^>]+>|[ACDEFGHIKLMNPQRSTVWY])/g;
-  const tokens = sequence?.match(tokenPattern);
+export type MaskedInferenceParams = {
+  transform: Transforms.FILL_MASK;
+  sequence: string;
+  model:
+    | ModelOptions.esm2_650M
+    | ModelOptions.esm2_3B
+    | ModelOptions.ginkgo_maskedlm_3utr_v1
+    | ModelOptions.ginkgo_aa0_650M;
+};
+
+export type PromoterActivityParams = {
+  transform: Transforms.PROMOTER_ACTIVITY;
+  promoter_sequence: string;
+  orf_sequence: string;
+  tissue_of_interest: Record<string, string[]>;
+  model: ModelOptions.borzoi_human_fold0;
+};
+
+export type TracksPredictionParams = {
+  transform: Transforms.TRACKS_PREDICTION;
+  sequence: string;
+  tracks: string[];
+  model: ModelOptions.borzoi_human_fold0;
+};
+
+export type DiffusionUnmaskingParams = {
+  transform: Transforms.DIFFUSION_UNMASKING;
+  unmaskings_per_step: number;
+  sequence: string;
+  model: ModelOptions.abdiffusion | ModelOptions.lcdna;
+};
+
+// HELPER FUNCTIONS -------------------------------------------------------------
+
+/**
+ * Counts the number of tokens in a given sequence, counting special tokens as 1.
+ *
+ * @param sequence - The sequence to count tokens from.
+ * @returns The number of tokens in the sequence.
+ */
+const getNumberOfTokens = (sequence: string): number => {
+  const tokenPattern = /(<[^>]+>|[acdefghiklmnpqrstvwy])/g;
+  const tokens = sequence.toLowerCase()?.match(tokenPattern);
   return tokens ? tokens.length : 0;
 };
 
-export function getModelPricing({
-  model,
-  sequence,
-  tracks,
-  transform,
-}: ModelPricingOptions): number {
-  let price = 0;
+/**
+ * Counts the number of masked tokens in a given sequence.
+ *
+ * @param sequence - The sequence to count masked tokens from.
+ * @returns The number of masked tokens in the sequence.
+ */
+const getNumberOfMaskedTokens = (sequence: string): number => {
+  const maskTokenPattern = /<mask>/g;
+  const maskTokens = sequence.toLowerCase().match(maskTokenPattern);
+  return maskTokens ? maskTokens.length : 0;
+};
 
-  switch (model) {
-    case ModelOptions.borzoi_dna:
-      // Fixed price per request
-      price = 0.0025;
-      break;
+// PRICING FUNCTION --------------------------------------------------------------
 
-    case ModelOptions.borzoi_human_fold0:
-      // Fixed price per request for PROMOTER_ACTIVITY
-      if (transform === Transforms.PROMOTER_ACTIVITY) {
-        price = 0.0025;
-      }
-      // $0.003 + $0.00003*tracks.length for TRACKS_PREDICTION
-      // The output size grows with the number of tracks (up to 7000) and so file transfer becomes costly.
-      if (transform === Transforms.TRACKS_PREDICTION) {
-        price = 0.003 + 0.00003 * tracks.length;
-      }
-      break;
+/**
+ * Calculates the pricing for a given model operation based on the provided parameters.
+ *
+ * @param params - The parameters for the model operation, including the sequence, model,
+ * and transform type.
+ * @returns The calculated pricing for the model operation.
+ */
+export function getModelPricing(
+  params:
+    | MeanEmbeddingParams
+    | MaskedInferenceParams
+    | PromoterActivityParams
+    | TracksPredictionParams
+    | DiffusionUnmaskingParams
+): number {
+  const TOKEN_COST_PER_MODEL = {
+    [ModelOptions.esm2_650M]: 0.00000018,
+    [ModelOptions.esm2_3B]: 0.00000025,
+    [ModelOptions.ginkgo_maskedlm_3utr_v1]: 0.00000018,
+    [ModelOptions.ginkgo_aa0_650M]: 0.00000018,
+  };
 
-    case ModelOptions.abdiffusion:
-      // $0.0002 per mask token in the sequence
-      const numMasks = getMaskTokens(sequence);
-      price = 0.0002 * numMasks;
-      break;
+  const COST_PER_MODEL_PASS = {
+    [ModelOptions.borzoi_human_fold0]: 0.0025,
+    [ModelOptions.abdiffusion]: 0.0002,
+    [ModelOptions.lcdna]: 0.01,
+  };
 
-    case ModelOptions.lcdna:
-      // Fixed price per request up to 30,000 nucleotide characters
-      const sequenceLength = sequence.length;
-      if (sequenceLength <= 30000) {
-        price = 0.01;
-      } else {
-        // Handle sequences longer than 30,000 nucleotides
-        // Assuming an additional cost per extra nucleotide
-        const extraNucleotides = sequenceLength - 30000;
-        price = 0.01 + 0.00001 * extraNucleotides;
-      }
-      break;
+  switch (params.transform) {
+    case Transforms.EMBEDDING:
+      return (
+        TOKEN_COST_PER_MODEL[params.model] * getNumberOfTokens(params.sequence)
+      );
 
-    default:
-      throw new Error(`Model "${model}" not recognized.`);
+    case Transforms.FILL_MASK:
+      return (
+        TOKEN_COST_PER_MODEL[params.model] * getNumberOfTokens(params.sequence)
+      );
+
+    case Transforms.PROMOTER_ACTIVITY:
+      return COST_PER_MODEL_PASS[ModelOptions.borzoi_human_fold0]; // Fixed price per request
+
+    case Transforms.TRACKS_PREDICTION:
+      return 0.003 + 0.00003 * params.tracks.length; // $0.003 + $0.00003*tracks.length
+
+    case Transforms.DIFFUSION_UNMASKING:
+      const n_passes =
+        getNumberOfMaskedTokens(params.sequence) / params.unmaskings_per_step;
+      const pass_cost = COST_PER_MODEL_PASS[params.model];
+      return pass_cost * n_passes;
   }
-
-  return price;
 }
