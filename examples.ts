@@ -3,7 +3,7 @@ import {
   PromoterActivityParams,
   MeanEmbeddingParams,
   MaskedInferenceParams,
-  DiffusionUnmaskingParams,
+  DiffusionGenerateParams,
   Transforms,
   ModelOptions,
 } from "./modelPricing";
@@ -52,16 +52,16 @@ console.log({
   price: getModelPricing(promoter_activity_params),
 });
 
-// Diffusion Unmasking ----------------------------------------------------------
+// Diffusion Generation ----------------------------------------------------------
 
-const diffusion_unmasking_params: DiffusionUnmaskingParams = {
+const diffusion_generation_params: DiffusionGenerateParams = {
   sequence:
     "MKLLM<MASK><MASK><MASK><MASK>MKL<MASK><MASK><MASK><MASK><MASK><MASK><MASK>MKL",
   model: ModelOptions.abdiffusion,
-  transform: Transforms.DIFFUSION_UNMASKING,
-  unmaskings_per_step: 2,
+  transform: Transforms.DIFFUSION_GENERATE,
+  unmaskings_per_step: 3,
 };
 console.log({
-  scenario: "diffusion_unmasking",
-  price: getModelPricing(diffusion_unmasking_params),
+  scenario: "diffusion_generation",
+  price: getModelPricing(diffusion_generation_params),
 });

@@ -7,10 +7,9 @@
 export enum Transforms {
   EMBEDDING = "EMBEDDING",
   FILL_MASK = "FILL_MASK",
-  GENERATE = "GENERATE",
+  DIFFUSION_GENERATE = "DIFFUSION_GENERATE",
   PROMOTER_ACTIVITY = "PROMOTER_ACTIVITY",
   TRACKS_PREDICTION = "TRACKS_PREDICTION",
-  DIFFUSION_UNMASKING = "DIFFUSION_UNMASKING",
 }
 
 export enum ModelOptions {
@@ -60,8 +59,8 @@ export type TracksPredictionParams = {
   model: ModelOptions.borzoi_human_fold0;
 };
 
-export type DiffusionUnmaskingParams = {
-  transform: Transforms.DIFFUSION_UNMASKING;
+export type DiffusionGenerateParams = {
+  transform: Transforms.DIFFUSION_GENERATE;
   unmaskings_per_step: number;
   sequence: string;
   model: ModelOptions.abdiffusion | ModelOptions.lcdna;
@@ -108,7 +107,7 @@ export function getModelPricing(
     | MaskedInferenceParams
     | PromoterActivityParams
     | TracksPredictionParams
-    | DiffusionUnmaskingParams
+    | DiffusionGenerateParams
 ): number {
   const TOKEN_COST_PER_MODEL = {
     [ModelOptions.esm2_650M]: 0.00000018,
@@ -140,7 +139,7 @@ export function getModelPricing(
     case Transforms.TRACKS_PREDICTION:
       return 0.003 + 0.00003 * params.tracks.length; // $0.003 + $0.00003*tracks.length
 
-    case Transforms.DIFFUSION_UNMASKING:
+    case Transforms.DIFFUSION_GENERATE:
       const n_passes =
         getNumberOfMaskedTokens(params.sequence) / params.unmaskings_per_step;
       const pass_cost = COST_PER_MODEL_PASS[params.model];
