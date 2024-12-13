@@ -10,6 +10,7 @@ export enum Transforms {
   DIFFUSION_GENERATE = "DIFFUSION_GENERATE",
   PROMOTER_ACTIVITY = "PROMOTER_ACTIVITY",
   TRACKS_PREDICTION = "TRACKS_PREDICTION",
+  BOLTZ_STRUCTURE_PREDICTION = "BOLTZ_STRUCTURE_PREDICTION",
 }
 
 export enum ModelOptions {
@@ -66,6 +67,39 @@ export type DiffusionGenerateParams = {
   model: ModelOptions.abdiffusion | ModelOptions.lcdna;
 };
 
+type Protein = {
+  id: Array<string> | string;
+  sequence: string;
+};
+type ProteinElement = {
+  protein: Protein;
+};
+
+type CCD = {
+  id: Array<string> | string;
+  ccd: string;
+};
+
+type CCDElement = {
+  ligand: CCD;
+};
+
+type Smiles = {
+  id: Array<string> | string;
+  smiles: string;
+};
+
+type SmilesElement = {
+  ligand: Smiles;
+};
+type Element = ProteinElement | CCDElement | SmilesElement;
+
+export type BoltzStructurePredictionParams = {
+  transform: Transforms.BOLTZ_STRUCTURE_PREDICTION;
+  sequences: Element[];
+  version: number;
+};
+
 // HELPER FUNCTIONS -------------------------------------------------------------
 
 /**
@@ -108,6 +142,7 @@ export function getModelPricing(
     | PromoterActivityParams
     | TracksPredictionParams
     | DiffusionGenerateParams
+    | BoltzStructurePredictionParams
 ): number {
   const TOKEN_COST_PER_MODEL = {
     [ModelOptions.esm2_650M]: 0.00000018,
@@ -144,5 +179,17 @@ export function getModelPricing(
         getNumberOfMaskedTokens(params.sequence) / params.unmaskings_per_step;
       const pass_cost = COST_PER_MODEL_PASS[params.model];
       return pass_cost * n_passes;
+
+    case Transforms.BOLTZ_STRUCTURE_PREDICTION:
+      let totalCost = 0.01;
+      params.sequences.forEach((sequence) => {
+        if ("protein" in sequence) {
+          const proteinObj = sequence.protein as Protein;
+          totalCost += 0.00025 * proteinObj.sequence.length;
+        } else {
+          totalCost += 0.0025;
+        }
+      });
+      return totalCost;
   }
 }
