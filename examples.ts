@@ -4,6 +4,7 @@ import {
   MeanEmbeddingParams,
   MaskedInferenceParams,
   DiffusionGenerateParams,
+  BoltzStructurePredictionParams,
   Transforms,
   ModelOptions,
 } from "./modelPricing";
@@ -64,4 +65,20 @@ const diffusion_generation_params: DiffusionGenerateParams = {
 console.log({
   scenario: "diffusion_generation",
   price: getModelPricing(diffusion_generation_params),
+});
+
+// Boltz Structure Prediction ----------------------------------------------------
+
+const structure_prediction_params: BoltzStructurePredictionParams = {
+  sequences: [
+    { protein: { id: "A", sequence: "QLEDSEVEAVAKGLEEMYANGVTEDNF" } },
+    { protein: { id: "B", sequence: "QLEDSEVEAVAKGLEEMYANGVTEDNF" } },
+  ],
+  version: 1,
+  transform: Transforms.BOLTZ_STRUCTURE_PREDICTION,
+};
+
+console.log({
+  scenario: "structure_prediction",
+  price: getModelPricing(structure_prediction_params),
 });
