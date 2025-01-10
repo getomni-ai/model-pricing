@@ -8,6 +8,7 @@ export enum Transforms {
   EMBEDDING = "EMBEDDING",
   FILL_MASK = "FILL_MASK",
   DIFFUSION_GENERATE = "DIFFUSION_GENERATE",
+  MRNA_DIFFUSION_GENERATE = "MRNA_DIFFUSION_GENERATE",
   PROMOTER_ACTIVITY = "PROMOTER_ACTIVITY",
   TRACKS_PREDICTION = "TRACKS_PREDICTION",
 }
@@ -20,6 +21,7 @@ export enum ModelOptions {
   esm2_650M = "esm2-650M",
   esm2_3B = "esm2-3B",
   ginkgo_maskedlm_3utr_v1 = "ginkgo-maskedlm-3utr-v1",
+  mrna_foundation = "mrna-foundation",
 }
 
 // REQUEST TYPES ----------------------------------------------------------------
@@ -108,6 +110,7 @@ export function getModelPricing(
     | PromoterActivityParams
     | TracksPredictionParams
     | DiffusionGenerateParams
+    | MRNADiffusionGenerateParams
 ): number {
   const TOKEN_COST_PER_MODEL = {
     [ModelOptions.esm2_650M]: 0.00000018,
@@ -146,3 +149,16 @@ export function getModelPricing(
       return pass_cost * n_passes;
   }
 }
+
+export type MRNADiffusionGenerateParams = {
+  transform: Transforms.MRNA_DIFFUSION_GENERATE;
+  unmaskings_per_step: number;
+  model: ModelOptions.mrna_foundation;
+  three_utr: string;
+  five_utr: string;
+  sequence_aa: string;
+  species: string;
+  temperature: number;
+  decoding_order_strategy: string;
+  num_samples: number;
+};
