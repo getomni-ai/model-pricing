@@ -8,6 +8,7 @@ export enum Transforms {
   EMBEDDING = "EMBEDDING",
   FILL_MASK = "FILL_MASK",
   DIFFUSION_GENERATE = "DIFFUSION_GENERATE",
+  MRNA_DIFFUSION_GENERATE = "MRNA_DIFFUSION_GENERATE",
   PROMOTER_ACTIVITY = "PROMOTER_ACTIVITY",
   TRACKS_PREDICTION = "TRACKS_PREDICTION",
 }
@@ -20,6 +21,7 @@ export enum ModelOptions {
   esm2_650M = "esm2-650M",
   esm2_3B = "esm2-3B",
   ginkgo_maskedlm_3utr_v1 = "ginkgo-maskedlm-3utr-v1",
+  mrna_foundation = "mrna-foundation",
 }
 
 // REQUEST TYPES ----------------------------------------------------------------
@@ -92,6 +94,19 @@ const getNumberOfMaskedTokens = (sequence: string): number => {
   return maskTokens ? maskTokens.length : 0;
 };
 
+export type MRNADiffusionGenerateParams = {
+  transform: Transforms.MRNA_DIFFUSION_GENERATE;
+  unmaskings_per_step: number;
+  model: ModelOptions.mrna_foundation;
+  three_utr: string;
+  five_utr: string;
+  sequence_aa: string;
+  species: string;
+  temperature: number;
+  decoding_order_strategy: string;
+  num_samples: number;
+};
+
 // PRICING FUNCTION --------------------------------------------------------------
 
 /**
@@ -108,6 +123,7 @@ export function getModelPricing(
     | PromoterActivityParams
     | TracksPredictionParams
     | DiffusionGenerateParams
+    | MRNADiffusionGenerateParams
 ): number {
   const TOKEN_COST_PER_MODEL = {
     [ModelOptions.esm2_650M]: 0.00000018,
@@ -120,6 +136,7 @@ export function getModelPricing(
     [ModelOptions.borzoi_human_fold0]: 0.0025,
     [ModelOptions.abdiffusion]: 0.0002,
     [ModelOptions.lcdna]: 0.01,
+    [ModelOptions.mrna_foundation]: 0.0002,
   };
 
   switch (params.transform) {
@@ -144,5 +161,14 @@ export function getModelPricing(
         getNumberOfMaskedTokens(params.sequence) / params.unmaskings_per_step;
       const pass_cost = COST_PER_MODEL_PASS[params.model];
       return pass_cost * n_passes;
+
+    case Transforms.MRNA_DIFFUSION_GENERATE:
+      const n_masked_tokens =
+        getNumberOfMaskedTokens(params.five_utr) +
+        getNumberOfMaskedTokens(params.three_utr);
+      const mrna_n_passes = n_masked_tokens / params.unmaskings_per_step;
+      return (
+        COST_PER_MODEL_PASS[params.model] * params.num_samples * mrna_n_passes
+      );
   }
 }

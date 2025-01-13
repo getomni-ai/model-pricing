@@ -4,6 +4,7 @@ import {
   MeanEmbeddingParams,
   MaskedInferenceParams,
   DiffusionGenerateParams,
+  MRNADiffusionGenerateParams,
   Transforms,
   ModelOptions,
 } from "./modelPricing";
@@ -64,4 +65,25 @@ const diffusion_generation_params: DiffusionGenerateParams = {
 console.log({
   scenario: "diffusion_generation",
   price: getModelPricing(diffusion_generation_params),
+});
+
+// MRNA Diffusion Generation ----------------------------------------------------
+
+const mrnadiffusion_generation_params: MRNADiffusionGenerateParams = {
+  transform: Transforms.MRNA_DIFFUSION_GENERATE,
+  unmaskings_per_step: 3,
+  five_utr:
+    "TGGA<MASK><MASK><MASK><MASK>GCG<MASK><MASK><MASK><MASK><MASK><MASK><MASK>GGTG",
+  three_utr:
+    "GA<MASK><MASK><MASK><MASK>CCA<MASK><MASK><MASK><MASK><MASK><MASK><MASK>GG",
+  sequence_aa: "QLEDSEVEAVAKGLEEMYANGVTEDNFQLEDSEVEAVAKGLEEMYANGVTEDNF",
+  species: "human",
+  model: ModelOptions.mrna_foundation,
+  temperature: 1,
+  decoding_order_strategy: "max_prob",
+  num_samples: 5,
+};
+console.log({
+  scenario: "mrnadiffusion_generation",
+  price: getModelPricing(mrnadiffusion_generation_params),
 });
